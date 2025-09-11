@@ -9,7 +9,7 @@ It now runs through a **unified pipeline** that can perform session-level and/or
    ```bash
    python3 -m venv .venv && source .venv/bin/activate
    pip install -r requirements.txt
-````
+   ````
 
 2. Create `.env.local` (or copy `.env.example`) and fill in your values:
 
@@ -142,9 +142,4 @@ Rules:
 * **Traceability**: The ETag of the instruction blob is stored as `instructions_version` in the results.
 * **Reliability**: API calls use retries for rate limits and transient errors.
 
-```
 
----
-
-Would you like me to also regenerate the **zip** with these new versions of `main.py` and `README.md` so you can download the updated project directly?
-```
