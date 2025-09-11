@@ -38,6 +38,7 @@ from .storage import get_blob_text
 from .openai_client import build_client
 from .classifiers.session_classifier import classify_session
 from .classifiers.message_classifier import classify_messages
+from .utils import strip_first_user_message_instructions
 
 logger = logging.getLogger(__name__)
 
@@ -122,6 +123,12 @@ def run_pipeline(
         session_id = s["session_id"]
         max_ts = s["max_ts"]
         msgs_raw = fetch_messages_for_session(engine, session_id, roles=roles)
+        
+        # Optionally strip embedded instructions from the first user message
+        if cfg.first_user_split_marker:
+            msgs_raw = strip_first_user_message_instructions(
+                msgs_raw, cfg.first_user_split_marker
+            )
 
         # Prepare transcript for session classification
         messages_for_session = [
@@ -135,6 +142,7 @@ def run_pipeline(
 
         # 1) Session-level classification
         if run_session_classification and messages_for_session:
+            print("Classifying session:", session_id)
             result = classify_session(
                 client=client,
                 model=cfg.assistant_model,
@@ -159,6 +167,7 @@ def run_pipeline(
 
         # 2) Message-level classification (within the same session)
         if run_message_classification and msgs_raw:
+            print("Classifying messages for session:", session_id)
             # Optionally skip messages we already have
             already = set()
             if not reclassify_existing_messages:
@@ -182,6 +191,7 @@ def run_pipeline(
 
             by_id = {m["id"]: m for m in msgs_raw}
             for batch in batches:
+                print(batch)
                 results = classify_messages(
                     client=client,
                     model=cfg.assistant_model,

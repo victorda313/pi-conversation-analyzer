@@ -43,7 +43,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--roles",
         nargs="*",
-        default=["user"],
+        default=["user","assistant"],
         help="Roles to include when building transcripts and selecting messages (e.g., user assistant tool).",
     )
 
