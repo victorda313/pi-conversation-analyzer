@@ -1,8 +1,3 @@
-Got it — I’ll give you the updated **README.md** in a clean, copy-pasteable block without extra commentary around it:
-
----
-
-````markdown
 # Chatbot Classification (Azure OpenAI + PostgreSQL)
 
 This project classifies chatbot **sessions** and **messages** using **Azure OpenAI**, stores results in **PostgreSQL**, and pulls agent instructions from **Azure Blob Storage**.  
