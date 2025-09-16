@@ -191,38 +191,41 @@ def run_pipeline(
 
             by_id = {m["id"]: m for m in msgs_raw}
             for batch in batches:
-                print(batch)
-                results = classify_messages(
-                    client=client,
-                    model=cfg.assistant_model,
-                    system_instructions=msg_instr_text,
-                    categories=categories,
-                    batch=batch,
-                    max_tokens=cfg.classifier_max_tokens,
-                    temperature=cfg.classifier_temperature,
-                )
-                for r in results:
-                    try:
-                        mid = int(r["message_id"])  # model returns numeric id per schema
-                    except Exception:
-                        continue
-                    m = by_id.get(mid)
-                    if not m:
-                        continue
-                    primary = r.get("primary_category", "other")
-                    scores = r.get("scores", {})
-                    upsert_message_classification(
-                        engine,
-                        message_id=mid,
-                        session_id=m["session_id"],
-                        role=m["role"],
-                        primary_category=primary,
-                        all_categories=scores,
+                # TODO: fix better exception handling / retries
+                try:
+                    results = classify_messages(
+                        client=client,
                         model=cfg.assistant_model,
-                        instructions_version=msg_instr_ver,
+                        system_instructions=msg_instr_text,
+                        categories=categories,
+                        batch=batch,
+                        max_tokens=cfg.classifier_max_tokens,
+                        temperature=cfg.classifier_temperature,
                     )
-                    messages_processed += 1
-
+                    for r in results:
+                        try:
+                            mid = int(r["message_id"])  # model returns numeric id per schema
+                        except Exception:
+                            continue
+                        m = by_id.get(mid)
+                        if not m:
+                            continue
+                        primary = r.get("primary_category", "other")
+                        scores = r.get("scores", {})
+                        upsert_message_classification(
+                            engine,
+                            message_id=mid,
+                            session_id=m["session_id"],
+                            role=m["role"],
+                            primary_category=primary,
+                            all_categories=scores,
+                            model=cfg.assistant_model,
+                            instructions_version=msg_instr_ver,
+                        )
+                        messages_processed += 1
+                except Exception as e:
+                    logger.error("Error classifying messages in session %s: %s", session_id, e)
+                    continue
     logger.info(
         "Unified pipeline complete. Sessions: %d, Messages: %d",
         sessions_processed,

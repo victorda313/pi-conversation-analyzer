@@ -86,18 +86,17 @@ def _coerce_results(
 
 
 def build_user_payload(categories: list[str], items: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """Build user payload for message classification.
+    """Build classification payload for one batch (batch = usually whole session).
 
-    Args:
-        categories: Allowed category labels.
-        items: List of {message_id, text} dicts.
+    Each item is a message dict:
+      { "message_id": int, "role": str, "text": str }
 
-    Returns:
-        Dict ready to be JSON-serialized and sent as the user content.
+    The model will classify each of them, using earlier items in the same
+    batch as context when helpful.
     """
-    expected_ids = [it["message_id"] for it in items]
+    expected_ids = [int(it["message_id"]) for it in items]
     return {
-        "task": "single-label classification per message",
+        "task": "context-aware per-message classification",
         "categories": categories,
         "expected_count": len(items),
         "expected_ids": expected_ids,
@@ -112,14 +111,11 @@ def build_user_payload(categories: list[str], items: List[Dict[str, Any]]) -> Di
         },
         "items": items,
         "instructions": (
-            "Return ONLY valid JSON with an 'items' array of length equal to expected_count. "
-            "Each element MUST correspond to one message_id from expected_ids, exactly once. "
-            "Assign exactly one primary_category to each message, and provide a probability-like "
-            "score for every category that sums ~1. If the text is off-topic or unclear, use 'other'. "
-            "Do not include any extra keys or commentary."
+            "Classify EVERY item in 'items'. For each message, use earlier items in this list "
+            "as context if they help disambiguate. Do NOT use later items. "
+            "Return valid JSON only, with one element per expected_id."
         ),
     }
-
 
 def classify_messages(
     *,
